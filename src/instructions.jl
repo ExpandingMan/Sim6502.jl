@@ -94,9 +94,63 @@ export st!, sta!, stx!, sty!
 ===================================================================================================#
 
 
+#===================================================================================================
+    <register transfers>
+===================================================================================================#
+function t!(c::CPU, reg1::Symbol, reg2::Symbol)
+    v = store!(c, reg2, fetch(c, reg1))
+    checkNflag!(c, v)
+    checkZflag!(c, v)
+end
+
+tax!(c::CPU) = t!(c, :A, :X)
+tay!(c::CPU) = t!(c, :A, :Y)
+txa!(c::CPU) = t!(c, :X, :A)
+tya!(c::CPU) = t!(c, :Y, :A)
+
+export t!, tax!, tay!, txa!, tya!
+#===================================================================================================
+    </register transfers>
+===================================================================================================#
 
 
+# TODO test thoroughly !!!
+#===================================================================================================
+    <logical operations>
+===================================================================================================#
+# template for logical operations
+function logical!(logical_op::Function, c::CPU, val::UInt8)
+    c.A = logical_op(c.A, val)
+    checkNflag!(c.A)
+    checkZflag!(c.A)
+    c.A
+end
 
+and!(c::CPU, val::UInt8) = logical!(&, c, val)
+and!{T<:AddressingMode}(c::CPU, m::Memory, ::Type{T}, ptr::Π) = and!(c, deref(T, ptr, c, m))
+and!(c::CPU, m::Memory, ptr::Π) = and!(c, m, Direct, ptr)
+
+eor!(c::CPU, val::UInt8) = logical!(⊻, c, val)
+eor!{T<:AddressingMode}(c::CPU, m::Memory, ::Type{T}, ptr::Π) = eor!(c, deref(T, ptr, c, m))
+eor!(c::CPU, m::Memory, ptr::Π) = eor!(c, m, Direct, ptr)
+
+ora!(c::CPU, val::UInt8) = logical!(|, c, val)
+ora!{T<:AddressingMode}(c::CPU, m::Memory, ::Type{T}, ptr::Π) = ora!(c, deref(T, ptr, c, m))
+ora!(c::CPU, m::Memory, ptr::Π) = ora!(c, m, Direct, ptr)
+
+function bit!(c::CPU, m::Memory, ptr::Π)
+    v = deref(ptr, m)
+    c.A & v == 0 ? status!(c, :Z, true) : status!(c, :Z, false)
+    status!(c, :V, Bool((0x40 & v) >> 6))
+    status!(c, :N, Bool((0x80 & v) >> 7))
+    v
+end
+bit!(c::CPU, m::Memory, ::Type{Direct}, ptr::Π) = bit!(c, m, ptr)
+
+export and!, eor!, ora!, bit!
+#===================================================================================================
+    </logical operations>
+===================================================================================================#
 
 
 # immediate mode
