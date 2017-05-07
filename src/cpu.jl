@@ -18,7 +18,6 @@ end
 export CPU
 
 
-import Base.fetch
 fetch(c::CPU, reg::Symbol) = getfield(c, reg)
 store!(c::CPU, reg::Symbol, val::Integer) = setfield!(c, reg, val)
 export fetch, store!

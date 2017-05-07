@@ -14,20 +14,32 @@ reset!(m::Memory) = (m.v .= zeros(UInt8, length(m.v)))
 #===================================================================================================
     <pointers>
 ===================================================================================================#
-abstract type AbstractMPtr end
+abstract type AbstractΠ end  # uses capital Π
 
-type MPtr{T<:Unsigned} <: AbstractMPtr
+type Π{T<:Unsigned} <: AbstractΠ
     addr::T
 
-    MPtr{T}(addr::Unsigned) where T<:Unsigned = new(addr)
+    Π{T}(addr::Unsigned) where T<:Unsigned = new(addr)
 end
-export MPtr
+export Π
 
-dereference{T}(ptr::MPtr{T}, m::Memory) = m.v[ptr.addr+one(T)]
-deref(ptr::MPtr, m::Memory) = dereference(ptr, m)
-↦(ptr::MPtr, m::Memory) = dereference(ptr, m)
+const Π8 = Π{UInt8}  # zero page pointer
+const Π16 = Π{UInt16}  # standard 6502 memory pointer
+export Π8, Π16
 
-export dereference, deref, ↦
+dereference{T}(ptr::Π{T}, m::Memory) = m.v[ptr.addr+one(T)]
+deref(ptr::Π, m::Memory) = dereference(ptr, m)
+↦(ptr::Π, m::Memory) = dereference(ptr, m)  # this symbol is \mapsto
+
+store!(m::Memory, ptr::Π{T}, val::UInt8) = (m.v[ptr.addr+one(T)] = val)
+
+(+){T}(ptr1::Π{T}, ptr2::Π{T}) = Π{T}(ptr1.addr + ptr2.addr)
+(-){T}(ptr1::Π{T}, ptr2::Π{T}) = Π{T}(ptr1.addr - ptr2.addr)
+
+(+){T}(ptr::Π{T}, val::Unsigned) = Π{T}(ptr.addr + convert(T, val))
+(-){T}(ptr::Π{T}, val::Unsigned) = Π{T}(ptr.addr - convert(T, val))
+
+export dereference, deref, ↦, store!, +, -
 #===================================================================================================
     </pointers>
 ===================================================================================================#
