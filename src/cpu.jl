@@ -22,7 +22,7 @@ fetch(c::CPU, reg::Symbol) = getfield(c, reg)
 store!(c::CPU, reg::Symbol, val::Integer) = setfield!(c, reg, val)
 export fetch, store!
 
-counter!(c::CPU, ℓ::UInt8) = (c.PC += ℓ)
+counter!(c::CPU, ℓ::Unsigned) = (c.PC += ℓ)
 export counter!
 
 
