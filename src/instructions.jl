@@ -1,11 +1,11 @@
 #=====================================================================================================
 Some conventions:
-    All instructions are based on methods where arguments are passed explicitly (rather than from
-    the stack). These base methods affect the registers (or memory) as they should, but do not
-    affect the program counter as they are not reading from the stack.
+    All instructions are based on methods where arguments are passed from an external source
+    (i.e. they do not come from the CPU's memory).
 
-    Zero-argument instruction methods read memory from the stack, and affect the PC register as
-    they should.
+    **These calls do not affect the program counter.**
+
+    TODO add methods for running instructions from Memory.
 =====================================================================================================#
 
 # these can be passed to instructions to specify addressing modes when appropriate
@@ -202,7 +202,7 @@ export and!, eor!, ora!, bit!
 ===================================================================================================#
 function adc!(c::CPU, val::UInt8)
     val += UInt8(status(c, :C))
-    checkCflag!(c, c.A, val)
+    checkCflag!(c, c.A, val)  # TODO check whether this is supposed to unset
     c.A += val
     checkNflag!(c, c.A)
     checkZflag!(c, c.A)

@@ -16,5 +16,6 @@ include("memory.jl")
 include("boilerplate.jl")
 include("instructions.jl")
 include("northbridge.jl")
+include("opcodes.jl")
 
 end # module
