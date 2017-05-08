@@ -24,6 +24,9 @@ export AddressingMode, DirectMode, IndirectMode, Direct, DirectX, DirectY, Indir
 # utility functions used frequently in instructions
 checkNflag!(c::CPU, val::UInt8) = val ≥ 0x80 ? status!(c, :N, true) : status!(c, :N, false)
 checkZflag!(c::CPU, val::UInt8) = val == 0x00 ? status!(c, :Z, true) : status!(c, :Z, false)
+function checkCflag!(c::CPU, val1::UInt8, val2::UInt8)
+    overflow(val1, val2) ? status!(c, :C, true) : status!(c, :C, false)
+end
 
 # pointers that occur in different addressing modes
 pointer(::Type{Direct}, ptr::Π, c::CPU, m::Memory) = ptr
@@ -114,15 +117,56 @@ export t!, tax!, tay!, txa!, tya!
 ===================================================================================================#
 
 
-# TODO test thoroughly !!!
+# TODO check effect of other instructions on stack!!!
+#===================================================================================================
+    <stack operations>
+===================================================================================================#
+function tsx!(c::CPU)
+    c.X = c.SP
+    checkNflag!(c, c.X)
+    checkZflag!(c, c.X)
+    c.X
+end
+
+txs!(c::CPU) = (c.SP = c.X)
+
+function pha!(c::CPU)  # push A to stack
+    store!(m, Π(c.SP), c.A)
+    c.SP -= 0x01
+end
+
+function php!(c::CPU)  # push P (processor status) to stack
+    store!(m, Π(c.SP), c.P)
+    c.SP -= 0x01
+end
+
+function pla!(c::CPU)  # pull stack onto A
+    c.A = deref(m, Π(c.SP))
+    checkNflag!(c, c.A)
+    checkZflag!(c, c.A)
+    c.SP += 0x01
+    c.A
+end
+
+# in example this doesn't set the blank or B flags for some reason... wtf?
+function plp!(c::CPU)  # pull stack onto P
+    c.P = deref(m, Π(c.SP))
+    c.SP += 0x01
+end
+#===================================================================================================
+    </stack operations>
+===================================================================================================#
+
+
+
 #===================================================================================================
     <logical operations>
 ===================================================================================================#
 # template for logical operations
 function logical!(logical_op::Function, c::CPU, val::UInt8)
     c.A = logical_op(c.A, val)
-    checkNflag!(c.A)
-    checkZflag!(c.A)
+    checkNflag!(c, c.A)
+    checkZflag!(c, c.A)
     c.A
 end
 
@@ -153,15 +197,42 @@ export and!, eor!, ora!, bit!
 ===================================================================================================#
 
 
-# immediate mode
+#===================================================================================================
+    <arithmetic>
+===================================================================================================#
 function adc!(c::CPU, val::UInt8)
-    val += UInt8(status(c, :C))  # carry bit gets added in this instruction
-    checkNflag!(c, val)
-    overflow(val, c.A) && status!(c, :C, true)
+    val += UInt8(status(c, :C))
+    checkCflag!(c, c.A, val)
     c.A += val
+    checkNflag!(c, c.A)
     checkZflag!(c, c.A)
-    counter!(c, 0x02)
     c.A
 end
-export adc!
+
+adc!{T<:AddressingMode}(c::CPU, m::Memory, ::Type{T}, ptr::Π) = adc!(c, pointer(T, ptr, c, m))
+adc!(c::CPU, m::Memory, ptr::Π) = adc!(c, m, Direct, ptr)
+
+
+function sbc!(c::CPU, val::UInt8)
+    val -= ~UInt8(status(c, :C))
+    checkCflag!(c, c.A, val)
+    c.A -= val
+    checkNflag!(c, c.A)
+    checkZflag!(c, c.A)
+    c.A
+end
+
+sbc!{T<:AddressingMode}(c::CPU, m::Memory, ::Type{T}, ptr::Π) = sbc!(c, pointer(T, ptr, c, m))
+sbc!(c::CPU, m::Memory, ptr::Π) = sbc!(c, m, Direct, ptr)
+
+
+
+
+
+export adc!, sbc!
+#===================================================================================================
+    </arithmetic>
+===================================================================================================#
+
+
 

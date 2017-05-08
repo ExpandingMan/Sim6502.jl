@@ -6,7 +6,7 @@ mutable struct CPU
     A::UInt8  # accumulator register
     X::UInt8  # index registers
     Y::UInt8
-    SP::UInt8  # stack pointer register
+    SP::UInt8  # stack pointer register, I'm tempted to make this 16-bit
     PC::UInt16  # program counter register
     P::UInt8  # processor status register
 
