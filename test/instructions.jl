@@ -13,6 +13,6 @@ end
 # @p lda!(c, 0x40)
 # @p bit!(c, m, Π(0x00))
 
-@p lda!(c, 0xfe)
-@p adc!(c, 0x01)
+@p lda!(c, 0xff)
+@p sbc!(c, 0x01)
 

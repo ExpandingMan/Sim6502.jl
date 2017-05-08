@@ -226,10 +226,15 @@ sbc!{T<:AddressingMode}(c::CPU, m::Memory, ::Type{T}, ptr::Π) = sbc!(c, pointer
 sbc!(c::CPU, m::Memory, ptr::Π) = sbc!(c, m, Direct, ptr)
 
 
+function cmp!(c::CPU, val::UInt8)
+    # TODO finish!!!!
+end
 
 
 
-export adc!, sbc!
+
+
+export adc!, sbc!, cmp!
 #===================================================================================================
     </arithmetic>
 ===================================================================================================#
