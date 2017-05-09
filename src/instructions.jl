@@ -6,6 +6,10 @@ Some conventions:
     **These calls do not affect the program counter.**
 
     TODO add methods for running instructions from Memory.
+
+    TODO symbols passed for lookup should be implemented through macros !!! (i.e. at compile time)
+
+    TODO investigate inlining
 =====================================================================================================#
 
 # these can be passed to instructions to specify addressing modes when appropriate
@@ -17,6 +21,10 @@ struct DirectX <: DirectMode end
 struct DirectY <: DirectMode end
 struct IndirectX <: IndirectMode end
 struct IndirectY <: IndirectMode end
+
+# some instructions only have these modes
+const DirectXModes = Union{Direct,DirectX}
+const DirectYModes = Union{Direct,DirectY}
 
 export AddressingMode, DirectMode, IndirectMode, Direct, DirectX, DirectY, IndirectX, IndirectY
 
@@ -141,7 +149,7 @@ function php!(c::CPU)  # push P (processor status) to stack
 end
 
 function pla!(c::CPU)  # pull stack onto A
-    c.A = deref(m, Π(c.SP))
+    c.A = deref(Π(c.SP), m)
     checkNflag!(c, c.A)
     checkZflag!(c, c.A)
     c.SP += 0x01
@@ -150,7 +158,7 @@ end
 
 # in example this doesn't set the blank or B flags for some reason... wtf?
 function plp!(c::CPU)  # pull stack onto P
-    c.P = deref(m, Π(c.SP))
+    c.P = deref(Π(c.SP), m)
     c.SP += 0x01
 end
 #===================================================================================================
@@ -202,14 +210,14 @@ export and!, eor!, ora!, bit!
 ===================================================================================================#
 function adc!(c::CPU, val::UInt8)
     val += UInt8(status(c, :C))
-    checkCflag!(c, c.A, val)  # TODO check whether this is supposed to unset
+    checkCflag!(c, c.A, val)
     c.A += val
     checkNflag!(c, c.A)
     checkZflag!(c, c.A)
     c.A
 end
 
-adc!{T<:AddressingMode}(c::CPU, m::Memory, ::Type{T}, ptr::Π) = adc!(c, pointer(T, ptr, c, m))
+adc!{T<:AddressingMode}(c::CPU, m::Memory, ::Type{T}, ptr::Π) = adc!(c, deref(pointer(T, ptr, c, m), m))
 adc!(c::CPU, m::Memory, ptr::Π) = adc!(c, m, Direct, ptr)
 
 
@@ -222,22 +230,85 @@ function sbc!(c::CPU, val::UInt8)
     c.A
 end
 
-sbc!{T<:AddressingMode}(c::CPU, m::Memory, ::Type{T}, ptr::Π) = sbc!(c, pointer(T, ptr, c, m))
+sbc!{T<:AddressingMode}(c::CPU, m::Memory, ::Type{T}, ptr::Π) = sbc!(c, deref(pointer(T, ptr, c, m), m))
 sbc!(c::CPU, m::Memory, ptr::Π) = sbc!(c, m, Direct, ptr)
 
 
-function cmp!(c::CPU, val::UInt8)
-    # TODO finish!!!!
+function compare!(c::CPU, reg::Symbol, val::UInt8)
+    r = fetch(c, reg)
+    r ≥ val ? status!(c, :C, true) : status!(c, :C, false)
+    ξ = r - val
+    checkNflag!(c, ξ)
+    checkZflag!(c, ξ)
+    r
 end
+function compare!{T<:AddressingMode}(c::CPU, m::Memory, reg::Symbol, ::Type{T}, ptr::Π)
+    compare!(c, reg, deref(pointer(T, ptr, c, m), m))
+end
+compare!(c::CPU, m::Memory, reg::Symbol, ptr::Π) = compare!(c, m, reg, Direct, ptr)
 
+cmp!(c::CPU, val::UInt8) = compare!(c, :A, val)
+cmp!{T<:AddressingMode}(c::CPU, m::Memory, ::Type{T}, ptr::Π) = compare!(c, m, :A, T, ptr)
+cmp!(c::CPU, m::Memory, ptr::Π) = compare!(c, m, :A, ptr)
 
+# this instruction only has direct mode
+cpx!(c::CPU, val::UInt8) = compare!(c, :X, val)
+cpx!(c::CPU, m::Memory, ::Type{Direct}, ptr::Π) = compare!(c, m, :X, T, ptr)
+cpx!(c::CPU, m::Memory, ptr::Π) = compare!(c, m, :X, ptr)
 
+# this instruction only has direct mode
+cpy!(c::CPU, val::UInt8) = compare!(c, :Y, val)
+cpy!(c::CPU, m::Memory, ::Type{Direct}, ptr::Π) = compare!(c, m, :Y, T, ptr)
+cpy!(c::CPU, m::Memory, ptr::Π) = compare!(c, m, :Y, ptr)
 
-
-export adc!, sbc!, cmp!
+export adc!, sbc!, compare!, cmp!, cpx!, cpy!
 #===================================================================================================
     </arithmetic>
 ===================================================================================================#
 
+# TODO RETEST ARITHMETIC AND INCREMENTS!!!! ESPECIALLY POINTERS!!!
+
+#===================================================================================================
+    <increments and decrements>
+===================================================================================================#
+# note that the result of this needs to be stored
+function increment!(c::CPU, val::UInt8)
+    ξ = val + 1
+    checkZflag!(c, ξ)
+    checkNflag!(c, ξ)
+    ξ
+end
+
+function inc!{T<:DirectXModes}(c::CPU, m::Memroy, ::Type{T}, ptr::Π)
+    C.x = increment!(c, deref(pointer(T, ptr, c, m), m))
+end
+inc!(c::CPU, m::Memory, ptr::Π) = inc!(c, m, Direct, ptr)
+
+inx!(c::CPU) = (c.X = increment!(c, c.X))
+
+iny!(c::CPU) = (c.Y = increment!(c, c.Y))
+
+
+function decrement!(c::CPU, val::UInt8)
+    ξ = val - 1
+    checkZflag!(c, ξ)
+    checkNflag!(c, ξ)
+    ξ
+end
+
+function dec!{T<:DirectXModes}(c::CPU, m::Memory, ::Type{T}, ptr::Π)
+    C.x = decrement!(c, deref(pointer(T, ptr, c, m), m))
+end
+dec!(c::CPU, m::Memory, ptr::Π) = dec!(c, m, Direct, ptr)
+
+dex!(c::CPU, m::Memory, ptr::Π) = (c.X = decrement!(c, c.X))
+
+dey!(c::CPU, m::Memory, ptr::Π) = (c.Y = decrement!(c, c.Y))
+
+
+export increment!, inc!, inx!, iny!, decrement!, dec!, dex!, dey!
+#===================================================================================================
+    </increments and decrements>
+===================================================================================================#
 
 
