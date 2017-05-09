@@ -13,6 +13,9 @@ end
 # @p lda!(c, 0x40)
 # @p bit!(c, m, Π(0x00))
 
-@p ldx!(c, 0x03)
-@p cpx!(c, 0x02)
+@p ldx!(c, 0x40)
+@p stx!(c, m, Π(0x00))
+
+@p lda!(c, 0x80)
+@p asl!(c, m, Π(0x00))
 

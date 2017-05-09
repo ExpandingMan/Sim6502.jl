@@ -266,7 +266,6 @@ export adc!, sbc!, compare!, cmp!, cpx!, cpy!
     </arithmetic>
 ===================================================================================================#
 
-# TODO RETEST ARITHMETIC AND INCREMENTS!!!! ESPECIALLY POINTERS!!!
 
 #===================================================================================================
     <increments and decrements>
@@ -279,7 +278,7 @@ function increment!(c::CPU, val::UInt8)
     ξ
 end
 
-function inc!{T<:DirectXModes}(c::CPU, m::Memroy, ::Type{T}, ptr::Π)
+function inc!{T<:DirectXModes}(c::CPU, m::Memory, ::Type{T}, ptr::Π)
     C.x = increment!(c, deref(pointer(T, ptr, c, m), m))
 end
 inc!(c::CPU, m::Memory, ptr::Π) = inc!(c, m, Direct, ptr)
@@ -309,6 +308,33 @@ dey!(c::CPU, m::Memory, ptr::Π) = (c.Y = decrement!(c, c.Y))
 export increment!, inc!, inx!, iny!, decrement!, dec!, dex!, dey!
 #===================================================================================================
     </increments and decrements>
+===================================================================================================#
+
+
+#===================================================================================================
+    <shifts>
+===================================================================================================#
+# checkZflag! must be called from outside!
+function arithmetic_shiftleft!(c::CPU, val::UInt8)
+    val & 0x80 > 0x00 ? status!(c, :C, true) : status!(c, :C, false)
+    ξ = val << 1
+    checkNflag!(c, ξ)
+    ξ
+end
+
+asl!(c::CPU) = (c.A = arithmetic_shiftleft!(c, c.A); checkZflag!(c, c.A); c.A)
+function asl!{T<:DirectXModes}(c::CPU, m::Memory, ::Type{T}, ptr::Π)
+    ξ = arithmetic_shiftleft!(c, deref(pointer(T, ptr, c, m), m))
+    store!(m, ptr, ξ)
+    # we neglect checking A == 0 since it didn't change
+    ξ
+end
+asl!(c::CPU, m::Memory, ptr::Π) = asl!(c, m, Direct, ptr)
+
+
+export arithmetic_shiftleft!, asl!
+#===================================================================================================
+    </shifts>
 ===================================================================================================#
 
 
