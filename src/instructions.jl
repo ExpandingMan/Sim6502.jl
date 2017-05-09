@@ -315,6 +315,7 @@ export increment!, inc!, inx!, iny!, decrement!, dec!, dex!, dey!
     <shifts>
 ===================================================================================================#
 # checkZflag! must be called from outside!
+# WTF? why is this inconsistent with the other ops???
 function arithmetic_shiftleft!(c::CPU, val::UInt8)
     val & 0x80 > 0x00 ? status!(c, :C, true) : status!(c, :C, false)
     ξ = val << 1
@@ -332,7 +333,60 @@ end
 asl!(c::CPU, m::Memory, ptr::Π) = asl!(c, m, Direct, ptr)
 
 
-export arithmetic_shiftleft!, asl!
+function logical_shiftright!(c::CPU, val::UInt8)
+    val & 0x01 > 0x00 ? status!(c, :C, true) : status!(c, :C, false)
+    ξ = val >> 1
+    checkZflag!(c, ξ)
+    checkNflag!(c, ξ)
+    ξ
+end
+
+lsr!(c::CPU) = (c.A = logical_shiftright!(c, c.A))
+function lsr!{T<:DirectXModes}(c::CPU, m::Memory, ::Type{T}, ptr::Π)
+    ξ = logical_shiftright!(c, deref(pointer(T, ptr, c, m), m))
+    store!(m, ptr, ξ)
+    ξ
+end
+lsr!(c::CPU, m::Memory, ptr::Π) = lsr!(c, m, Direct, ptr)
+
+
+# again, checkZflag! must be called from outside!
+function rotateleft!(c::CPU, val::UInt8)
+    val & 0x80 > 0x00 ? status!(c, :C, true) : status!(c, :C, false)
+    ξ = (val << 1) + (0x01 * convert(UInt8, status(c, :C)))
+    checkNflag!(c, ξ)
+    ξ
+end
+
+rol!(c::CPU) = (c.A = rotateleft!(c, c.A); checkZflag!(c, c.A); c.A)
+function rol!{T<:DirectXModes}(c::CPU, m::Memory, ::Type{T}, ptr::Π)
+    ξ = rotateleft!(c, deref(pointer(T, ptr, c, m), m))
+    store!(m, ptr, ξ)
+    # we neglect checking A == 0 since it didn't change
+    ξ
+end
+rol!(c::CPU, m::Memory, ptr::Π) = rol!(c, m, Direct, ptr)
+
+
+# again, checkZflag! must be called from outside!
+function rotateright!(c::CPU, val::UInt8)
+    val & 0x01 > 0x00 ? status!(c, :C, true) : status!(c, :C, false)
+    ξ = (val >> 1) + (0x80 * convert(UInt8, status(c, :C)))
+    checkNflag!(c, ξ)
+    ξ
+end
+
+ror!(c::CPU) = (c.A = rotateright!(c, c.A); checkZflag!(c.A); c.A)
+function ror!{T<:DirectXModes}(c::CPU, m::Memory, ::Type{T}, ptr::Π)
+    ξ = rotateright!(c, deref(pointer(T, ptr, c, m), m))
+    store!(m, ptr, ξ)
+    # we neglect checking A == 0 since it didn't change
+    ξ
+end
+ror!(c::CPU, m::Memory, ptr::Π) = ror!(c, m, Direct, ptr)
+
+
+export arithmetic_shiftleft!, asl!, logical_shiftright!, lsr!, rotateleft!, rol!, rotateright!, ror!
 #===================================================================================================
     </shifts>
 ===================================================================================================#
