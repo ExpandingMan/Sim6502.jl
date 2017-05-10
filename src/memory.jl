@@ -8,25 +8,13 @@ struct Memory
 end
 export Memory
 
-reset!(m::Memory) = (m.v .= zeros(UInt8, length(m.v)))
-export reset!
-
-fetch(m::Memory, idx::T) where T<:Unsigned = m.v[idx+one(T)]
-fetch(m::Memory, idx::AbstractVector{T}) where T<:Unsigned = m.v[idx+one(T)]
-
-Base.getindex(m::Memory, T) = fetch(m, T)
-
-Base.setindex!(m::Memory, val::UInt8, idx::T) where T<:Unsigned = (m.v[idx+one(T)] = val)
 
 
-#===================================================================================================
-    <pointers>
-===================================================================================================#
 abstract type AbstractΠ end  # uses capital Π
 
 # note that, somewhat confusingly, T is the type of the pointer, not the value being pointed to
 type Π{T<:Unsigned} <: AbstractΠ
-    addr::UInt16
+    addr::T
 
     Π{T}(addr::Unsigned) where T<:Unsigned = new(addr)
 end
@@ -38,7 +26,25 @@ const Π8 = Π{UInt8}  # zero page pointer
 const Π16 = Π{UInt16}  # standard 6502 memory pointer
 export Π8, Π16
 
-dereference{T}(ptr::Π{T}, m::Memory) = m.v[ptr.addr+one(T)]
+
+
+reset!(m::Memory) = (m.v .= zeros(UInt8, length(m.v)))
+export reset!
+
+fetch(m::Memory, idx::T) where T<:Unsigned = m.v[idx+one(T)]
+fetch(m::Memory, idx::AbstractVector{T}) where T<:Unsigned = m.v[idx+one(T)]
+
+Base.getindex(m::Memory, idx) = m.v[idx + 0x0001]
+Base.getindex(m::Memory, ptr::Π) = fetch(m, ptr.addr)
+
+Base.setindex!(m::Memory, val::UInt8, idx::T) where T<:Unsigned = (m.v[idx+one(T)] = val)
+Base.setindex!(m::Memory, val::UInt8, ptr::Π) = setindex!(m, val, ptr.addr)
+
+
+#===================================================================================================
+    <referencing>
+===================================================================================================#
+dereference{T}(ptr::Π{T}, m::Memory) = m[ptr]
 deref(ptr::Π, m::Memory) = dereference(ptr, m)
 (↦)(ptr::Π, m::Memory) = dereference(ptr, m)  # this symbol is \mapsto
 
@@ -49,7 +55,7 @@ deref(::Type{UInt8}, ptr::Π, m::Memory) = dereference(ptr, Π)
 function dereference{T}(::Type{UInt16}, ptr::Π{T}, m::Memory)::UInt16
     least_sig = deref(ptr, m)
     most_sig = deref(ptr + one(T), m)
-    (convert(UInt16, most_sig) << 8) + least_sig
+    0x0100 * most_sig + least_sig
 end
 deref(::Type{UInt16}, ptr::Π, m::Memory) = dereference(UInt16, ptr, m)
 (⇾)(ptr::Π, m::Memory) = dereference(UInt16, ptr, m)  # this symbol is \rightarrowtriangle
@@ -62,7 +68,13 @@ function dereference{T}(ptr::Π{T}, m::Memory, ℓ::Integer)
 end
 deref(ptr::Π, m::Memory, ℓ::Integer) = dereference(ptr, m, ℓ)
 
-store!{T}(m::Memory, ptr::Π{T}, val::UInt8) = (m.v[ptr.addr+one(T)] = val)
+store!{T}(m::Memory, ptr::Π{T}, val::UInt8) = (m[ptr.addr] = val)
+# this stores backwards from the supplied memory address
+function storeback!{T}(m::Memory, ptr::Π{T}, val::UInt16)
+    m[ptr] = UInt8(val >> 8)
+    m[ptr - 0x01] = UInt8(0x00ff & val)
+    val
+end
 
 (+){T}(ptr1::Π{T}, ptr2::Π{T}) = Π{T}(ptr1.addr + ptr2.addr)
 (-){T}(ptr1::Π{T}, ptr2::Π{T}) = Π{T}(ptr1.addr - ptr2.addr)
@@ -72,7 +84,7 @@ store!{T}(m::Memory, ptr::Π{T}, val::UInt8) = (m.v[ptr.addr+one(T)] = val)
 
 export dereference, deref, ↦, ⇾, store!, +, -
 #===================================================================================================
-    </pointers>
+    </referencing>
 ===================================================================================================#
 
 

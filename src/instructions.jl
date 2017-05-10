@@ -10,6 +10,8 @@ Some conventions:
     TODO symbols passed for lookup should be implemented through macros !!! (i.e. at compile time)
 
     TODO investigate inlining
+
+    TODO warn about the stack doing weird things
 =====================================================================================================#
 
 # these can be passed to instructions to specify addressing modes when appropriate
@@ -49,6 +51,17 @@ deref{T<:AddressingMode}(::Type{T}, ptr::Π, c::CPU, m::Memory) = deref(pointer(
 function store!{T<:AddressingMode}(::Type{T}, ptr::Π, c::CPU, m::Memory, val::UInt8)
     store!(m, pointer(T, ptr, c, m), val)
 end
+
+stackpush!(c::CPU, m::Memory, val::UInt8) = (store!(m, stackpointer(c), val); c.SP -= 1)
+stackpush!(c::CPU, m::Memory, val::UInt16) = (storeback!(m, stackpointer(c), val); c.SP -= 2)
+
+stackpull!(c::CPU, m::Memory) = (ξ = deref(stackpointer(c), val); c.SP += 1; ξ)
+stackpull!(::Type{UInt16}, c::CPU, m::Memory) = (stackpull!(c, m) + 0x0100 * stackpull!(c, m))
+
+
+# this is for the weird arithmetic of the branching instructions (\boxplus)
+# TODO FINISH THIS !!!
+⊞(x::UInt16, y::UInt8) = ()
 
 
 #===================================================================================================
@@ -138,29 +151,23 @@ end
 
 txs!(c::CPU) = (c.SP = c.X)
 
-function pha!(c::CPU)  # push A to stack
-    store!(m, Π(c.SP), c.A)
-    c.SP -= 0x01
-end
+pha!(c::CPU, m::Memory) = stackpush!(c, m, c.A)
 
-function php!(c::CPU)  # push P (processor status) to stack
-    store!(m, Π(c.SP), c.P)
-    c.SP -= 0x01
-end
+php!(c::CPU, m::Memory) = stackpush!(c, m, c.P)
 
-function pla!(c::CPU)  # pull stack onto A
-    c.A = deref(Π(c.SP), m)
+
+function pla!(c::CPU, m::Memory)  # pull stack onto A
+    c.A = stackpull!(c, m)
     checkNflag!(c, c.A)
     checkZflag!(c, c.A)
-    c.SP += 0x01
     c.A
 end
 
 # in example this doesn't set the blank or B flags for some reason... wtf?
-function plp!(c::CPU)  # pull stack onto P
-    c.P = deref(Π(c.SP), m)
-    c.SP += 0x01
-end
+plp!(c::CPU, m::Memory) = (c.P = stackpull!(c, m))
+
+
+export tsx!, txs!, pha!, php!, pla!, plp!
 #===================================================================================================
     </stack operations>
 ===================================================================================================#
@@ -389,6 +396,98 @@ ror!(c::CPU, m::Memory, ptr::Π) = ror!(c, m, Direct, ptr)
 export arithmetic_shiftleft!, asl!, logical_shiftright!, lsr!, rotateleft!, rol!, rotateright!, ror!
 #===================================================================================================
     </shifts>
+===================================================================================================#
+
+
+#===================================================================================================
+    <jumps and calls>
+
+    TODO be __very__ careful about how you implement the byte counting of these!!!
+===================================================================================================#
+# note that this takes UInt16 arguments
+jmp!(c::CPU, val::UInt16) = (c.PC = val)
+
+# note, the assembly syntax for this function is really fucking weird
+# confusingly, the references call this indirect mode
+jmp!(c::CPU, m::Memory, ::Type{Direct}, ptr::Π{UInt16}) = jmp!(c, deref(UInt16, ptr, m))
+jmp!(c::CPU, m::Memory, ptr::Π{UInt16}) = jmp!(c, m, Direct, ptr)
+
+function jsr!(c::CPU, m::Memory, val::UInt16)
+    stackpush!(c, m, c.PC + 0x0002)
+    c.PC = val
+end
+
+
+rts!(c::CPU, m::Memory) = (c.PC = stackpull!(UInt16, c, m))
+
+
+export jmp!, jsr!, rts!
+#===================================================================================================
+    </jumps and calls>
+===================================================================================================#
+
+
+#===================================================================================================
+    <branches>
+
+    # TODO again be __very__ careful about how you implement byte counting for these!!!
+===================================================================================================#
+bcc!(c::CPU, m::Memory, val::Integer) = (!status(c, :C) && (c.PC += val); val)
+
+bcs!(c::CPU, m::Memory, val::Integer) = (status(c, :C) && (c.PC += val); val)
+
+
+#===================================================================================================
+    </branches>
+===================================================================================================#
+
+
+#===================================================================================================
+    <status flag changes>
+===================================================================================================#
+clc!(c::CPU) = status!(c, :C, false)
+
+cld!(c::CPU) = status!(c, :D, false)
+
+cli!(c::CPU) = status!(c, :I, false)
+
+clv!(c::CPU) = status!(c, :V, false)
+
+sec!(c::CPU) = status!(c, :C, true)
+
+sed!(c::CPU) = status!(c, :D, true)
+
+sei!(c::CPU) = status!(c, :I, true)
+
+export clc!, cld!, cli!, clv!, sec!, sed!, sei!
+#===================================================================================================
+    <status flag changes>
+===================================================================================================#
+
+
+#===================================================================================================
+    <system functions>
+===================================================================================================#
+# TODO this will require some special handling
+brk!(c::CPU) = status!(c, :B, true)
+
+nop!(c::CPU) = ()
+
+# __NOTE!!__ that PC is also incremented the normal way afterwards from reading the instruction
+function rti!(c::CPU, m::Memory)
+    ptr = stackpointer(c) + 0x01  # are you sure about this?
+    c.P = deref(ptr, m)
+    ptr = ptr + 0x01
+    pc_small = deref(ptr, m)
+    ptr = ptr + 0x01
+    pc_big = deref(ptr, m)
+    c.PC = 0x0100*pc_big + pc_small
+    c.SP += 0x03  # not completely confident in this either
+end
+
+export brk!, nop!, rti!
+#===================================================================================================
+    </system functions>
 ===================================================================================================#
 
 
