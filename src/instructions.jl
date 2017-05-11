@@ -60,8 +60,7 @@ stackpull!(::Type{UInt16}, c::CPU, m::Memory) = (stackpull!(c, m) + 0x0100 * sta
 
 
 # this is for the weird arithmetic of the branching instructions (\boxplus)
-# TODO FINISH THIS !!!
-⊞(x::UInt16, y::UInt8) = ()
+⊞(x::Unsigned, y::Unsigned) = unsigned(signed(x) + signed(y))
 
 
 #===================================================================================================
@@ -432,11 +431,24 @@ export jmp!, jsr!, rts!
 
     # TODO again be __very__ careful about how you implement byte counting for these!!!
 ===================================================================================================#
-bcc!(c::CPU, m::Memory, val::Integer) = (!status(c, :C) && (c.PC += val); val)
+bcc!(c::CPU, m::Memory, val::UInt8) = (!status(c, :C) && (c.PC = c.PC ⊞ val); val)
 
-bcs!(c::CPU, m::Memory, val::Integer) = (status(c, :C) && (c.PC += val); val)
+bcs!(c::CPU, m::Memory, val::UInt8) = (status(c, :C) && (c.PC = c.PC ⊞ val); val)
+
+beq!(c::CPU, m::Memory, val::UInt8) = (status(c, :Z) && (c.PC = c.PC ⊞ val); val)
+
+bmi!(c::CPU, m::Memory, val::UInt8) = (status(c, :N) && (c.PC = c.PC ⊞ val); val)
+
+bne!(c::CPU, m::Memory, val::UInt8) = (!status(c, :Z) && (c.PC = c.PC ⊞ val); val)
+
+bpl!(c::CPU, m::Memory, val::UInt8) = (!status(c, :N) && (c.PC = c.PC ⊞ val); val)
+
+bvc!(c::CPU, m::Memory, val::UInt8) = (!status(c, :V) && (c.PC = c.PC ⊞ val); val)
+
+bvs!(c::CPU, m::Memory, val::UInt8) = (status(c, :V) && (c.PC = c.PC ⊞ val); val)
 
 
+export bcc!, bcs!, beq!, bmi!, bne!, bpl!, bvc!, bvs!
 #===================================================================================================
     </branches>
 ===================================================================================================#
