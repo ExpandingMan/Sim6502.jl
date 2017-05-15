@@ -10,6 +10,12 @@ function opdict(opcode::UInt8, nbytes::Int, ncycles::Int)
     :(OPCODES[$opcode] = ($(opfuncname(opcode)), $nbytes, $ncycles))
 end
 
+function opdef_Implicit(opname::Symbol, opcode::UInt8)
+    fname = opfuncname(opcode)
+    quote
+        $fname(cs::Chipset, bytes::AbstractVector{UInt8}) = $opname(cs.cpu)
+    end
+end
 
 function opdef_Immediate(opname::Symbol, opcode::UInt8)
     fname = opfuncname(opcode)

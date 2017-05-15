@@ -102,6 +102,84 @@ end
     Absolute,  0x8c, 2, 4
 end
 
+@opdef tax! begin
+    Implicit,  0xaa, 1, 2
+end
+
+@opdef tay! begin
+    Implicit,  0xa8, 1, 2
+end
+
+@opdef txa! begin
+    Implicit,  0x8a, 1, 2
+end
+
+@opdef tya! begin
+    Implicit,  0x98, 1, 2
+end
+
+@opdef tsx! begin
+    Implicit,  0xba, 1, 2
+end
+
+@opdef txs! begin
+    Implicit,  0x9a, 1, 2
+end
+
+@opdef pha! begin
+    Implicit,  0x48, 1, 2
+end
+
+@opdef php! begin
+    Implicit,  0x08, 1, 3
+end
+
+@opdef pla! begin
+    Implicit,  0x68, 1, 4
+end
+
+@opdef plp! begin
+    Implicit,  0x28, 1, 4
+end
+
+@opdef and! begin
+    Immediate, 0x29, 2, 2
+    ZeroPage,  0x25, 2, 3
+    ZeroPageX, 0x35, 2, 4
+    Absolute,  0x2d, 3, 4
+    AbsoluteX, 0x3d, 3, 4
+    AbsoluteY, 0x39, 3, 4
+    IndirectX, 0x21, 2, 6
+    IndirectY, 0x31, 2, 5
+end
+
+@opdef eor! begin
+    Immediate, 0x49, 2, 2
+    ZeroPage,  0x45, 2, 3
+    ZeroPageX, 0x55, 2, 4
+    Absolute,  0x4d, 3, 4
+    AbsoluteX, 0x5d, 3, 4
+    AbsoluteY, 0x59, 3, 4
+    IndirectX, 0x41, 2, 6
+    IndirectY, 0x51, 2, 5
+end
+
+@opdef ora! begin
+    Immediate, 0x09, 2, 2
+    ZeroPage,  0x05, 2, 3
+    ZeroPageX, 0x15, 2, 4
+    Absolute,  0x0d, 3, 4
+    AbsoluteX, 0x1d, 3, 4
+    AbsoluteY, 0x19, 3, 4
+    IndirectX, 0x01, 2, 6
+    IndirectY, 0x11, 2, 5
+end
+
+@opdef bit! begin
+    ZeroPage,  0x24, 2, 3
+    Absolute,  0x2c, 3, 4
+end
+
 #===================================================================================================
     </opcodes>
 ===================================================================================================#
