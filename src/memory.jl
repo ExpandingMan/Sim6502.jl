@@ -26,6 +26,9 @@ const Π8 = Π{UInt8}  # zero page pointer
 const Π16 = Π{UInt16}  # standard 6502 memory pointer
 export Π8, Π16
 
+Π8(x::AbstractVector{UInt8}) = Π{UInt8}(x[1])
+
+Π16(x::AbstractVector{UInt8}) = Π{UInt16}(bincat(x[1], x[2]))
 
 
 reset!(m::Memory) = (m.v .= zeros(UInt8, length(m.v)))
@@ -39,6 +42,10 @@ Base.getindex(m::Memory, ptr::Π) = fetch(m, ptr.addr)
 
 Base.setindex!(m::Memory, val::UInt8, idx::T) where T<:Unsigned = (m.v[idx+one(T)] = val)
 Base.setindex!(m::Memory, val::UInt8, ptr::Π) = setindex!(m, val, ptr.addr)
+
+function Base.setindex!(m::Memory, v::AbstractVector{UInt8}, idx::AbstractVector{T}) where T <: Integer
+    m.v[idx+one(T)] = v
+end
 
 
 #===================================================================================================
