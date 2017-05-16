@@ -1,10 +1,12 @@
 __precompile__(true)
 
-# Note that I expect to use `import` instead of `using` when making the NES sim
+# Note that I expect to use `import` instead of `using` when making the NES emulator
 
 module Sim6502
 
 using MacroTools
+
+import FunctionWrappers: FunctionWrapper
 
 import Base.fetch
 import Base.pointer

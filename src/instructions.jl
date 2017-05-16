@@ -32,11 +32,9 @@ export AddressingMode, DirectMode, IndirectMode, Direct, DirectX, DirectY, Indir
 
 
 # utility functions used frequently in instructions
-checkNflag!(c::CPU, val::UInt8) = val ≥ 0x80 ? status!(c, :N, true) : status!(c, :N, false)
-checkZflag!(c::CPU, val::UInt8) = val == 0x00 ? status!(c, :Z, true) : status!(c, :Z, false)
-function checkCflag!(c::CPU, val1::UInt8, val2::UInt8)
-    overflow(val1, val2) ? status!(c, :C, true) : status!(c, :C, false)
-end
+checkNflag!(c::CPU, val::UInt8)::Bool = (c.flags.N = val ≥ 0x80)
+checkZflag!(c::CPU, val::UInt8)::Bool = (c.flags.Z = val == 0x00)
+checkCflag!(c::CPU, val1::UInt8, val2::UInt8)::Bool = (c.flags.C = overflow(val1, val2))
 
 # pointers that occur in different addressing modes
 pointer(::Type{Direct}, ptr::Π, c::CPU, m::Memory) = ptr

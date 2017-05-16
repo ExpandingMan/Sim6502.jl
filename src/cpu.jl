@@ -1,8 +1,22 @@
 
 # this is the default stack page
+# ultimately this should be a property of either the CPU or Chipset
 const STACK_PAGE = 0x0100
 
 # TODO WTF is with the break (B) flag?
+mutable struct FlagsRegister
+    C::Bool
+    Z::Bool
+    I::Bool
+    D::Bool
+    B::Bool
+    Ω::Bool
+    V::Bool
+    N::Bool
+
+    FlagsRegister() = new(false, false, false, false, false, false, false, false)
+end
+
 
 mutable struct CPU
     A::UInt8  # accumulator register
@@ -10,11 +24,11 @@ mutable struct CPU
     Y::UInt8
     SP::UInt8  # stack pointer register, I'm tempted to make this 16-bit
     PC::UInt16  # program counter register
-    P::UInt8  # processor status register
+    flags::FlagsRegister
 
     function CPU(A::UInt8=0x00, X::UInt8=0x00, Y::UInt8=0x00,
-                 SP::UInt8=0xff, PC::UInt16=0x0600, P::UInt8=0x00)
-        new(A, X, Y, SP, PC, P)
+                 SP::UInt8=0xff, PC::UInt16=0x0600, flags::FlagsRegister=FlagsRegister())
+        new(A, X, Y, SP, PC, flags)
     end
 end
 export CPU
@@ -42,7 +56,7 @@ function describe(c::CPU)
                 $st
     """
 end
-export descripbe
+export describe
 
 import Base.show
 Base.show(io::IO, c::CPU) = print(describe(c))
@@ -51,30 +65,20 @@ Base.show(io::IO, c::CPU) = print(describe(c))
 #===================================================================================================
     <status register access>
 ===================================================================================================#
-const REGISTER_DICT = Dict(:C=>0x01,
-                           :Z=>0x02,
-                           :I=>0x04,
-                           :D=>0x08,
-                           :B=>0x10,
-                           :V=>0x40,
-                           :N=>0x80)
-status(c::CPU, flag::UInt8) = Bool(flag & c.P)
-status(c::CPU, flag::Symbol) = status(c, REGISTER_DICT[flag])
+status(fr::FlagsRegister, flag::Symbol)::Bool = getfield(fr, flag)
+status(c::CPU, flag::Symbol)::Bool = getfield(fr, flag)
 
-# these are toggles; note they return the P register, not just the one bit
-status!(c::CPU, flag::UInt8) = (c.P = c.P ⊻ flag)
-status!(c::CPU, flag::Symbol) = status!(c, REGISTER_DICT[flag])
+# these are toggles
+status!(fr::FlagsRegister, flag::Symbol) = setfield!(fr, ~getfield(fr, flag))
+status!(c::CPU, flag::Symbol) = status!(c.flags, flag)
 
-function status!(c::CPU, flag::UInt8, val::Bool)
-    if val
-        c.P = c.P | flag
-    else
-        c.P = ~(~c.P | flag)
-    end
+status!(fr::FlagsRegister, flag::Symbol, val::Bool) = setfield!(fr, flag, val)
+status!(c::CPU, flag::Symbol, val::Bool) = status!(c.flags, flag, val)
+
+function status_string(fr::FlagsRegister)
+    string((Int(getfield(fr, f)) for f ∈ reverse(fieldnames(fr)))...)
 end
-status!(c::CPU, flag::Symbol, val::Bool) = status!(c, REGISTER_DICT[flag], val)
-
-status_string(c::CPU) = bits(c.P)
+status_string(c::CPU) = status_string(c.flags)
 
 export status, status!, status_string
 #===================================================================================================
