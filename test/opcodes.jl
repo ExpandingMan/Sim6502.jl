@@ -30,20 +30,21 @@ function makechipset()
     cs
 end
 
+ref = @benchmarkable begin
+    # cs.cpu.A = 0x00
+    # Sim6502.checkNflag!(cs.cpu, cs.cpu.A)
+    # Sim6502.checkZflag!(cs.cpu, cs.cpu.A)
+    # cs.cpu.A = cs.ram[0xa001]
+    cs.cpu.X = cs.cpu.A
+    Sim6502.checkNflag!(cs.cpu, cs.cpu.X)
+    Sim6502.checkZflag!(cs.cpu, cs.cpu.X)
+end setup=(cs = makechipset())
+
 
 b = @benchmarkable begin
     # tick!(cs)
     # tick!(cs)
     # tick!(cs)
-
-    # cs.cpu.A = 0x00
-    # Sim6502.checkNflag!(cs.cpu, cs.cpu.A)
-    # Sim6502.checkZflag!(cs.cpu, cs.cpu.A)
-    # cs.cpu.A = cs.ram[0xa001]
-    # cs.cpu.X = cs.cpu.A
-
-    lda!(cs.cpu, 0x00)
-    lda!(cs.cpu, cs.ram, Π(0xa001))
     tax!(cs.cpu)
 end setup=(cs = makechipset())
 
