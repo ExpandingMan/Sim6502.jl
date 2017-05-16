@@ -48,7 +48,7 @@ end
 function opdef_Absolute(opname::Symbol, opcode::UInt8)
     fname = opfuncname(opcode)
     quote
-        $fname(cs::Chipset, bytes::AbstractVector{UInt8}) = $opname(cs.cpu, cs.ram, Π16(bytes))
+        $fname(cs::Chipset, bytes::AbstractVector{UInt8}) = $opname(cs.cpu, cs.ram, Direct, Π16(bytes))
     end
 end
 
@@ -63,6 +63,13 @@ function opdef_AbsoluteY(opname::Symbol, opcode::UInt8)
     fname = opfuncname(opcode)
     quote
         $fname(cs::Chipset, bytes::AbstractVector{UInt8}) = $opname(cs.cpu, cs.ram, DirectY, Π16(bytes))
+    end
+end
+
+function opdef_Indirect(opname::Symbol, opcode::UInt8)
+    fname = opfuncname(opcode)
+    quote
+        $fname(cs::Chipset, bytes::AbstractVector{UInt8}) = $opname(cs.cpu, cs.ram, Indirect, Π16(bytes))
     end
 end
 
@@ -102,6 +109,8 @@ function opdef(mode::Symbol, opname::Symbol, opcode::UInt8)
         return opdef_AbsoluteX(opname, opcode)
     elseif mode == :AbsoluteY
         return opdef_AbsoluteY(opname, opcode)
+    elseif mode == :Indirect
+        return opdef_Indirect(opname, opcode)
     elseif mode == :IndirectX
         return opdef_IndirectX(opname, opcode)
     elseif mode == :IndirectY

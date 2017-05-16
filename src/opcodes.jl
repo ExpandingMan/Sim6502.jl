@@ -18,24 +18,22 @@ deref_opargs(cs::Chipset, ptr::Π, nbytes::Integer) = deref(ptr+0x01, cs.ram, nb
 ===================================================================================================#
 # this doesn't do the sleeping
 function tick!(cs::Chipset)
-    nbytes, ncycles = op!(cs, Π(cs.cpu.PC))
+    exe, nbytes, ncycles = op!(cs, Π(cs.cpu.PC))
     cs.cpu.PC += nbytes
     cs.clock += ncycles
-    nbytes, ncycles
+    exe(), nbytes, ncycles
 end
 
 
 # op! doesn't increment clock or instruction pointer
-function op!(cs::Chipset, bytes::AbstractVector{UInt8})
+@inline function op!(cs::Chipset, bytes::AbstractVector{UInt8})
     exe!, nbytes, ncycles = OPCODES[bytes[1]]
-    exe!(cs, bytes[2:end])
-    nbytes, ncycles
+    () -> exe!(cs, bytes[2:end]), nbytes, ncycles
 end
 
-function op!(cs::Chipset, ptr::Π)
+@inline function op!(cs::Chipset, ptr::Π)
     exe!, nbytes, ncycles = OPCODES[deref(ptr, cs.ram)]
-    exe!(cs, deref_opargs(cs, ptr, nbytes))
-    nbytes, ncycles
+    () -> exe!(cs, deref_opargs(cs, ptr, nbytes)), nbytes, ncycles
 end
 
 
@@ -52,16 +50,21 @@ export op!, tick!
 # returns func, nbytes, ncycles
 const OPCODES = Dict{UInt8,Tuple{Function,Int,Int}}();  sizehint!(OPCODES, N_OPCODES)
 
+# format is
+#    mode, opcode, nbytes, ncycles
+
+# we treat "Accumulator" mode as "Implicit"
+
 
 @opdef lda! begin
-    Immediate, 0x69, 2, 2
-    ZeroPage,  0x65, 2, 3
-    ZeroPageX, 0x75, 2, 4
-    Absolute,  0x6d, 3, 4
-    AbsoluteX, 0x7d, 3, 4  # TODO should automatically take care of page crossings
-    AbsoluteY, 0x79, 3, 4
-    IndirectX, 0x61, 2, 6
-    IndirectY, 0x71, 2, 5
+    Immediate, 0xa9, 2, 2
+    ZeroPage,  0xa5, 2, 3
+    ZeroPageX, 0xb5, 2, 4
+    Absolute,  0xad, 3, 4
+    AbsoluteX, 0xbd, 3, 4  # TODO should automatically take care of page crossings
+    AbsoluteY, 0xb9, 3, 4
+    IndirectX, 0xa1, 2, 6
+    IndirectY, 0xb1, 2, 5
 end
 
 @opdef ldx! begin
@@ -180,6 +183,118 @@ end
     Absolute,  0x2c, 3, 4
 end
 
+@opdef adc! begin
+    Immediate, 0x69, 2, 2
+    ZeroPage,  0x65, 2, 3
+    ZeroPageX, 0x75, 2, 4
+    Absolute,  0x6d, 3, 4
+    AbsoluteX, 0x7d, 3, 4
+    AbsoluteY, 0x79, 3, 4
+    IndirectX, 0x61, 2, 6
+    IndirectY, 0x71, 2, 5
+end
+
+@opdef sbc! begin
+    Immediate, 0xe9, 2, 2
+    ZeroPage,  0xe5, 2, 3
+    ZeroPageX, 0xf5, 2, 4
+    Absolute,  0xed, 3, 4
+    AbsoluteX, 0xfd, 3, 4
+    AbsoluteY, 0xf9, 3, 4
+    IndirectX, 0xe1, 2, 6
+    IndirectY, 0xf1, 2, 5
+end
+
+@opdef cmp! begin
+    Immediate, 0xc9, 2, 2
+    ZeroPage,  0xc5, 2, 3
+    ZeroPageX, 0xd5, 2, 4
+    Absolute,  0xcd, 3, 4
+    AbsoluteX, 0xdd, 3, 4
+    AbsoluteY, 0xd9, 3, 4
+    IndirectX, 0xc1, 2, 6
+    IndirectY, 0xd1, 2, 5
+end
+
+@opdef cpx! begin
+    Immediate, 0xe0, 2, 2
+    ZeroPage,  0xe4, 2, 3
+    Absolute,  0xec, 3, 4
+end
+
+@opdef cpy! begin
+    Immediate, 0xc0, 2, 2
+    ZeroPage,  0xc4, 2, 3
+    Absolute,  0xcc, 3, 4
+end
+
+@opdef inc! begin
+    ZeroPage,  0xe6, 2, 5
+    ZeroPageX, 0xf6, 2, 6
+    Absolute,  0xee, 3, 6
+    AbsoluteX, 0xfe, 3, 7
+end
+
+@opdef inx! begin
+    Implicit,  0xe8, 1, 2
+end
+
+@opdef iny! begin
+    Implicit,  0xc8, 1, 2
+end
+
+@opdef dec! begin
+    ZeroPage,  0xc6, 2, 5
+    ZeroPageX, 0xd6, 2, 6
+    Absolute,  0xce, 3, 6
+    AbsoluteX, 0xde, 3, 7
+end
+
+@opdef dex! begin
+    Implicit,  0xca, 1, 2
+end
+
+@opdef dey! begin
+    Implicit,  0x88, 1, 2
+end
+
+@opdef asl! begin
+    Implicit,  0x0a, 1, 2
+    ZeroPage,  0x06, 2, 5
+    ZeroPageX, 0x16, 2, 6
+    Absolute,  0x0e, 3, 6
+    AbsoluteX, 0x1e, 3, 7
+end
+
+@opdef lsr! begin
+    Implicit,  0x4a, 1, 2
+    ZeroPage,  0x46, 2, 5
+    ZeroPageX, 0x56, 2, 6
+    Absolute,  0x4e, 3, 6
+    AbsoluteX, 0x5e, 3, 7
+end
+
+@opdef rol! begin
+    Implicit,  0x2a, 1, 2
+    ZeroPage,  0x26, 2, 5
+    ZeroPageX, 0x36, 2, 6
+    Absolute,  0x2e, 3, 6
+    AbsoluteX, 0x3e, 3, 7
+end
+
+@opdef ror! begin
+    Implicit,  0x6a, 1, 2
+    ZeroPage,  0x66, 2, 5
+    ZeroPageX, 0x76, 2, 6
+    Absolute,  0x6e, 3, 6
+    AbsoluteX, 0x7e, 3, 7
+end
+
+# TODO haven't decided how to do this yet!
+@opdef jmp! begin
+    Immediate, 0x4c, 3, 3
+    Absolute,  0x6c, 3, 5
+end
 #===================================================================================================
     </opcodes>
 ===================================================================================================#

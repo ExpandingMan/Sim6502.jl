@@ -7,6 +7,7 @@ for this thing as generic as possible!
 
 
 # this will serve as the default. Note this was the NES mater clock / 16
+# this works out to about 559ns
 const NES_CLOCK_PERIOD = 1.0/1.662607 * 10.0^(-6)
 
 
