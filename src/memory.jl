@@ -47,6 +47,8 @@ function Base.setindex!(m::Memory, v::AbstractVector{UInt8}, idx::AbstractVector
     m.v[idx+one(T)] = v
 end
 
+Base.view(m::Memory, idx) = view(m.v, idx + 0x0001)
+Base.view(m::Memory, ptr::Π) = view(m, ptr.addr)
 
 #===================================================================================================
     <referencing>
@@ -54,6 +56,9 @@ end
 dereference{T}(ptr::Π{T}, m::Memory) = m[ptr]
 deref(ptr::Π, m::Memory) = dereference(ptr, m)
 (↦)(ptr::Π, m::Memory) = dereference(ptr, m)  # this symbol is \mapsto
+
+# note that the views always return SubArray, even for a single element
+derefview(ptr::Π, m::Memory) = view(m, ptr)
 
 dereference(::Type{UInt8}, ptr::Π, m::Memory)::UInt8 = dereference(ptr, Π)
 deref(::Type{UInt8}, ptr::Π, m::Memory) = dereference(ptr, Π)
@@ -74,6 +79,13 @@ function dereference{T}(ptr::Π{T}, m::Memory, ℓ::Integer)
     m.v[start_idx:end_idx]
 end
 deref(ptr::Π, m::Memory, ℓ::Integer) = dereference(ptr, m, ℓ)
+
+# returns SubArray
+function derefview{T}(ptr::Π{T}, m::Memory, ℓ::Integer)
+    start_idx = ptr.addr + one(T)
+    end_idx = start_idx + ℓ - 1
+    view(m.v, start_idx:end_idx)
+end
 
 store!{T}(m::Memory, ptr::Π{T}, val::UInt8) = (m[ptr.addr] = val)
 # this stores backwards from the supplied memory address

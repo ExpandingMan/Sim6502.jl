@@ -12,6 +12,11 @@ bytes2arg(bytes::AbstractVector{UInt8}) = bincat(bytes[1], bytes[2])
 # this gets the arguments to the op given the pointer to the instruction and nbytes total
 deref_opargs(cs::Chipset, ptr::Π, nbytes::Integer) = deref(ptr+0x01, cs.ram, nbytes-1)
 
+# this has been tested and so far yields inferior performance
+function derefview_opargs(cs::Chipset, ptr::Π, nbytes::Integer)
+    derefview(ptr+0x01, cs.ram, nbytes-1)
+end
+
 
 #===================================================================================================
     <execution>
@@ -53,6 +58,9 @@ const OpFunc = FunctionWrapper{UInt8,Tuple{Chipset,Vector{UInt8}}}
 
 # for the time being opcode 0x00 would throw an error
 const OPCODES = Vector{Tuple{OpFunc,Int,Int}}(N_OPCODES)
+
+# this is for the assembler
+const ASSEMBLY_DICT = Dict{String,UInt8}(); sizehint!(ASSEMBLY_DICT, N_OPCODES)
 
 # format is
 #    mode, opcode, nbytes, ncycles

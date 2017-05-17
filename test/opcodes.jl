@@ -30,6 +30,7 @@ function makechipset()
     cs
 end
 
+# TODO investigate allocs!!!
 
 function makebenches()
     ref = @benchmarkable begin

@@ -4,6 +4,9 @@ Here we keep some macros for doing boilerplate code generation...
 # TODO deal with page crossings!!!
 
 opfuncname(opcode::UInt8) = Symbol(string("op", hexstring(opcode), "!"))
+opstring(fname::Symbol) = strip(string(fname), '!')
+
+assemblydict(opname::Symbol, opcode::UInt8) = :(ASSEMBLY_DICT[$(opstring(opname))] = $opcode)
 
 
 function opdict(opcode::UInt8, nbytes::Int, ncycles::Int)
@@ -124,17 +127,16 @@ end
 
 
 
-
-
-
 macro opdef(opname::Symbol, defblock::Expr)
     @capture(defblock, begin defs__ end)
     defs = [tuple(ex.args...) for ex ∈ defs]
     funcdefs = [opdef(d[1], opname, d[2]) for d ∈ defs]
     dictries = [opdict(d[2], d[3], d[4]) for d ∈ defs]
+    assemblies = [assemblydict(opname, d[2]) for d ∈ defs]
     esc(quote
         $(funcdefs...)
         $(dictries...)
+        $(assemblies...)
     end)
 end
 
