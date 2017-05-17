@@ -47,8 +47,12 @@ export op!, tick!
 #===================================================================================================
     <opcodes>
 ===================================================================================================#
-# returns func, nbytes, ncycles
-const OPCODES = Dict{UInt8,Tuple{Function,Int,Int}}();  sizehint!(OPCODES, N_OPCODES)
+# this is an (efficient) function pointer type for the instructions
+# note this works even though ops take AbstractVector
+const OpFunc = FunctionWrapper{UInt8,Tuple{Chipset,Vector{UInt8}}}
+
+# for the time being opcode 0x00 would throw an error
+const OPCODES = Vector{Tuple{OpFunc,Int,Int}}(N_OPCODES)
 
 # format is
 #    mode, opcode, nbytes, ncycles
