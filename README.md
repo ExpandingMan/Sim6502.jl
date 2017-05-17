@@ -10,7 +10,8 @@ A simulator of the venerable MOS 6502 microprocessor written in pure Julia.
 
 A couple of things to note:
 
-- This is a full-blown simulator of the 6502, not a performance-oriented emulation.  Of course the 6502 came out in 1975 so in theory most modern systems
-    shouldn't have much trouble running full-blown games with this simulator (if I ever get that far).  However, poor performance should not be interpretted as
-    poor performance of the wonderful and very performant Julia language!
+- This program simulates the full internal state of the 6502.  It is, therefore, less performant than programs which are designed specifically for fast
+    emulations.  Currently `Sim6502` achieves a little over 10 times the rate of instruction execution as the original 6502 chip on a 2 GHz Intel x86 processor.
+    I suspect this is within a factor of 2 or 3 of the theoretical maximum (again, while achieving a full simulation).  Note that executing any 6502 instruction
+    involves 0 hash-table look-ups.
 - Currently I'm making no effort to make this simulation generic.  It is designed only for the 6502.
