@@ -3,11 +3,9 @@ Some conventions:
     All instructions are based on methods where arguments are passed from an external source
     (i.e. they do not come from the CPU's memory).
 
+    Note that many functions are explicitly inlined, but probably none of them have to be.
+
     **These calls do not affect the program counter.**
-
-    TODO add methods for running instructions from Memory.
-
-    TODO symbols passed for lookup should be implemented through macros !!! (i.e. at compile time)
 
     TODO investigate inlining
 
@@ -32,9 +30,9 @@ export AddressingMode, DirectMode, IndirectMode, Direct, DirectX, DirectY, Indir
 
 
 # utility functions used frequently in instructions
-checkNflag!(c::CPU, val::UInt8)::Bool = (c.flags.N = val ≥ 0x80)
-checkZflag!(c::CPU, val::UInt8)::Bool = (c.flags.Z = val == 0x00)
-checkCflag!(c::CPU, val1::UInt8, val2::UInt8)::Bool = (c.flags.C = overflow(val1, val2))
+@inline checkNflag!(c::CPU, val::UInt8) = (c.flags.N = val ≥ 0x80)
+@inline checkZflag!(c::CPU, val::UInt8) = (c.flags.Z = val == 0x00)
+@inline checkCflag!(c::CPU, val1::UInt8, val2::UInt8) = (c.flags.C = overflow(val1, val2))
 
 # pointers that occur in different addressing modes
 pointer(::Type{Direct}, ptr::Π, c::CPU, m::Memory) = ptr
@@ -78,7 +76,8 @@ function ld!{T<:AddressingMode}(c::CPU, m::Memory, reg::Symbol, ::Type{T}, ptr::
 end
 ld!(c::CPU, m::Memory, reg::Symbol, ptr::Π) = ld!(c, m, reg, Direct, ptr)
 
-# TODO get rid of boilerplate stuff
+# TODO  TESTING!!!! REVERT!!!!
+ldaa!(c::CPU, v::AbstractVector{UInt8}) = (c.A = v[1])
 lda!(c::CPU, val::UInt8) = ld!(c, :A, val)
 ldx!(c::CPU, val::UInt8) = ld!(c, :X, val)
 ldy!(c::CPU, val::UInt8) = ld!(c, :Y, val)

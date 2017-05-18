@@ -34,8 +34,8 @@ end
 export CPU
 
 
-fetch(c::CPU, reg::Symbol) = getfield(c, reg)
-store!(c::CPU, reg::Symbol, val::Integer) = setfield!(c, reg, val)
+@inline fetch(c::CPU, reg::Symbol) = getfield(c, reg)
+@inline store!(c::CPU, reg::Symbol, val::Integer) = setfield!(c, reg, val)
 export fetch, store!
 
 counter!(c::CPU, ℓ::Unsigned) = (c.PC += ℓ)

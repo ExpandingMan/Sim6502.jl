@@ -16,14 +16,14 @@ end
 function opdef_Implicit(opname::Symbol, opcode::UInt8)
     fname = opfuncname(opcode)
     quote
-        $fname(cs::Chipset, bytes::AbstractVector{UInt8}) = $opname(cs.cpu)
+        $fname(cs::Chipset) = $opname(cs.cpu)
     end
 end
 
 function opdef_Immediate(opname::Symbol, opcode::UInt8)
     fname = opfuncname(opcode)
     quote
-        $fname(cs::Chipset, bytes::AbstractVector{UInt8}) = $opname(cs.cpu, bytes[1])
+        $fname(cs::Chipset) = $opname(cs.cpu, opargs(cs, 1))
     end
 end
 
