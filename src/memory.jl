@@ -28,7 +28,8 @@ export Π8, Π16
 
 Π8(x::AbstractVector{UInt8}) = Π{UInt8}(x[1])
 
-Π16(x::AbstractVector{UInt8}) = Π{UInt16}(bincat(x[1], x[2]))
+Π16(x::UInt8, y::UInt8) = Π{UInt16}(bincat(x, y))
+Π16(x::AbstractVector{UInt8}) = Π16(x[1], x[2])
 
 
 reset!(m::Memory) = (m.v .= zeros(UInt8, length(m.v)))

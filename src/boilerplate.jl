@@ -6,12 +6,15 @@ Here we keep some macros for doing boilerplate code generation...
 opfuncname(opcode::UInt8) = Symbol(string("op", hexstring(opcode), "!"))
 opstring(fname::Symbol) = strip(string(fname), '!')
 
-assemblydict(opname::Symbol, opcode::UInt8) = :(ASSEMBLY_DICT[$(opstring(opname))] = $opcode)
+function assemblydict(opname::Symbol, mode::Symbol, opcode::UInt8)
+    :(ASSEMBLY_DICT[($(opstring(opname)),$(QuoteNode(mode)))] = $opcode)
+end
 
 
 function opdict(opcode::UInt8, nbytes::Int, ncycles::Int)
     :(OPCODES[$opcode] = ($(opfuncname(opcode)), $nbytes, $ncycles))
 end
+
 
 function opdef_Implicit(opname::Symbol, opcode::UInt8)
     fname = opfuncname(opcode)
@@ -30,63 +33,63 @@ end
 function opdef_ZeroPage(opname::Symbol, opcode::UInt8)
     fname = opfuncname(opcode)
     quote
-        $fname(cs::Chipset, bytes::AbstractVector{UInt8}) = $opname(cs.cpu, cs.ram, Π8(bytes))
+        $fname(cs::Chipset) = $opname(cs.cpu, cs.ram, Π8(opargs(cs, 1)))
     end
 end
 
 function opdef_ZeroPageX(opname::Symbol, opcode::UInt8)
     fname = opfuncname(opcode)
     quote
-        $fname(cs::Chipset, bytes::AbstractVector{UInt8}) = $opname(cs.cpu, cs.ram, DirectX, Π8(bytes))
+        $fname(cs::Chipset) = $opname(cs.cpu, cs.ram, DirectX, Π8(opargs(cs, 1)))
     end
 end
 
 function opdef_ZeroPageY(opname::Symbol, opcode::UInt8)
     fname = opfuncname(opcode)
     quote
-        $fname(cs::Chipset, bytes::AbstractVector{UInt8}) = $opname(cs.cpu, cs.ram, DirectY, Π8(bytes))
+        $fname(cs::Chipset) = $opname(cs.cpu, cs.ram, DirectY, Π8(opargs(cs, 1)))
     end
 end
 
 function opdef_Absolute(opname::Symbol, opcode::UInt8)
     fname = opfuncname(opcode)
     quote
-        $fname(cs::Chipset, bytes::AbstractVector{UInt8}) = $opname(cs.cpu, cs.ram, Direct, Π16(bytes))
+        $fname(cs::Chipset) = $opname(cs.cpu, cs.ram, Direct, Π16(opargs(cs,1), opargs(cs,2)))
     end
 end
 
 function opdef_AbsoluteX(opname::Symbol, opcode::UInt8)
     fname = opfuncname(opcode)
     quote
-        $fname(cs::Chipset, bytes::AbstractVector{UInt8}) = $opname(cs.cpu, cs.ram, DirectX, Π16(bytes))
+        $fname(cs::Chipset) = $opname(cs.cpu, cs.ram, DirectX, Π16(opargs(cs,1), opargs(cs,2)))
     end
 end
 
 function opdef_AbsoluteY(opname::Symbol, opcode::UInt8)
     fname = opfuncname(opcode)
     quote
-        $fname(cs::Chipset, bytes::AbstractVector{UInt8}) = $opname(cs.cpu, cs.ram, DirectY, Π16(bytes))
+        $fname(cs::Chipset) = $opname(cs.cpu, cs.ram, DirectY, Π16(opargs(cs,1), opargs(cs,2)))
     end
 end
 
 function opdef_Indirect(opname::Symbol, opcode::UInt8)
     fname = opfuncname(opcode)
     quote
-        $fname(cs::Chipset, bytes::AbstractVector{UInt8}) = $opname(cs.cpu, cs.ram, Indirect, Π16(bytes))
+        $fname(cs::Chipset) = $opname(cs.cpu, cs.ram, Indirect, Π16(opargs(cs,1), opargs(cs,2)))
     end
 end
 
 function opdef_IndirectX(opname::Symbol, opcode::UInt8)
     fname = opfuncname(opcode)
     quote
-        $fname(cs::Chipset, bytes::AbstractVector{UInt8}) = $opname(cs.cpu, cs.ram, IndirectX, Π8(bytes))
+        $fname(cs::Chipset) = $opname(cs.cpu, cs.ram, IndirectX, Π8(opargs(cs,1)))
     end
 end
 
 function opdef_IndirectY(opname::Symbol, opcode::UInt8)
     fname = opfuncname(opcode)
     quote
-        $fname(cs::Chipset, bytes::AbstractVector{UInt8}) = $opname(cs.cpu, cs.ram, IndirectY, Π8(bytes))
+        $fname(cs::Chipset) = $opname(cs.cpu, cs.ram, IndirectY, Π8(opargs(cs,1)))
     end
 end
 
@@ -132,7 +135,7 @@ macro opdef(opname::Symbol, defblock::Expr)
     defs = [tuple(ex.args...) for ex ∈ defs]
     funcdefs = [opdef(d[1], opname, d[2]) for d ∈ defs]
     dictries = [opdict(d[2], d[3], d[4]) for d ∈ defs]
-    assemblies = [assemblydict(opname, d[2]) for d ∈ defs]
+    assemblies = [assemblydict(opname, d[1], d[2]) for d ∈ defs]
     esc(quote
         $(funcdefs...)
         $(dictries...)

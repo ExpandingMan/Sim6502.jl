@@ -32,16 +32,15 @@ end
 
 function runbenches()
     ref = @benchmarkable begin
-        # cs.cpu.A = deref(Π(0x01), cs.ram)
+        cs.cpu.A = 0xaa
         cs.cpu.A = 0xab
-        # Sim6502.ldaa!(cs.cpu, view(cs.ram, 0x0601:0x0601))
-        # Sim6502.op0xa9!(cs, view(cs.ram.v, 0x0601:0x0601))
+        cs.cpu.A = 0xac
     end setup=(cs = makechipset())
 
     b = @benchmarkable begin
         op!(cs)
-        # tick!(cs)
-        # tick!(cs)
+        op!(cs)
+        op!(cs)
     end setup=(cs = makechipset())
 
     run(ref), run(b)
