@@ -19,5 +19,6 @@ include("boilerplate.jl")
 include("instructions.jl")
 include("chipset.jl")
 include("opcodes.jl")
+include("assembler.jl")
 
 end # module

@@ -28,7 +28,17 @@ function makechipset()
     cs
 end
 
-# TODO investigate allocs!!!
+
+function showstates()
+    cs = makechipset()
+
+    @p op!(cs)
+    @p op!(cs)
+    @p op!(cs)
+
+    cs
+end
+
 
 function runbenches()
     ref = @benchmarkable begin
@@ -47,4 +57,4 @@ function runbenches()
 end
 
 
-ref, b = runbenches()
+# ref, b = runbenches()

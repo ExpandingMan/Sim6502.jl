@@ -477,11 +477,11 @@ export clc!, cld!, cli!, clv!, sec!, sed!, sei!
 #===================================================================================================
     <system functions>
 ===================================================================================================#
-# TODO this will require some special handling
 brk!(c::CPU) = status!(c, :B, true)
 
 nop!(c::CPU) = ()
 
+# TODO this is likely fucked up
 # __NOTE!!__ that PC is also incremented the normal way afterwards from reading the instruction
 function rti!(c::CPU, m::Memory)
     ptr = stackpointer(c) + 0x01  # are you sure about this?
@@ -490,7 +490,7 @@ function rti!(c::CPU, m::Memory)
     pc_small = deref(ptr, m)
     ptr = ptr + 0x01
     pc_big = deref(ptr, m)
-    c.PC = 0x0100*pc_big + pc_small
+    c.PC = bincat(pc_small, pc_big)
     c.SP += 0x03  # not completely confident in this either
 end
 

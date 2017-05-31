@@ -131,11 +131,14 @@ end
 
 
 macro opdef(opname::Symbol, defblock::Expr)
-    @capture(defblock, begin defs__ end)
-    defs = [tuple(ex.args...) for ex ∈ defs]
-    funcdefs = [opdef(d[1], opname, d[2]) for d ∈ defs]
-    dictries = [opdict(d[2], d[3], d[4]) for d ∈ defs]
-    assemblies = [assemblydict(opname, d[1], d[2]) for d ∈ defs]
+    if @capture(defblock, begin defs__ end)
+        defs = [ex.args for ex ∈ defs]
+        funcdefs = [opdef(d[1], opname, d[2]) for d ∈ defs]
+        dictries = [opdict(d[2], d[3], d[4]) for d ∈ defs]
+        assemblies = [assemblydict(opname, d[1], d[2]) for d ∈ defs]
+    else
+        throw(AssertionError("Improper op definition for $opname."))
+    end
     esc(quote
         $(funcdefs...)
         $(dictries...)

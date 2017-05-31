@@ -32,9 +32,18 @@ end
 # this doesn't do the sleeping
 function op!(cs::Chipset)
     exe!, nbytes, ncycles = OPCODES[deref(Π(cs.cpu.PC), cs.ram)]
+    exe!(cs)
     cs.cpu.PC += nbytes
     cs.clock += ncycles
-    exe!(cs), nbytes, ncycles
+    nbytes, ncycles
+end
+
+# TODO eventually this should employ timing
+function run!(cs::Chipset)
+    while !cs.cpu.flags.B
+        op!(cs)
+        println(cs)
+    end
 end
 
 export op!, tick!
@@ -59,7 +68,9 @@ const OPCODES = Vector{Tuple{OpFunc,Int,Int}}(N_OPCODES)
 const ASSEMBLY_DICT = Dict{Tuple{String,Symbol},UInt8}(); sizehint!(ASSEMBLY_DICT, N_OPCODES)
 
 # format is
-#    mode, opcode, nbytes, ncycles
+#    mode, opcode, nbytes, ncycles, (increment)
+#
+# the last arg is optional and tells it whether or not to increment the instruction pointer
 
 # we treat "Accumulator" mode as "Implicit"
 
@@ -298,10 +309,92 @@ end
     AbsoluteX, 0x7e, 3, 7
 end
 
-# TODO haven't decided how to do this yet!
+# note that these get 0's because they don't increment the instruction pointer
 @opdef jmp! begin
-    Immediate, 0x4c, 3, 3
-    Absolute,  0x6c, 3, 5
+    Immediate, 0x4c, 0, 3
+    Absolute,  0x6c, 0, 5
+end
+
+@opdef jsr! begin
+    Immediate, 0x20, 0, 6
+end
+
+# TODO not sure if implicit works with cpu and ram arguments
+@opdef rts! begin
+    Implicit,  0x60, 0, 6
+end
+
+# TODO check if instruction pointer is handled correctly in branches
+@opdef bcc! begin
+    Immediate, 0x90, 2, 2 
+end
+
+@opdef bcs! begin
+    Immediate, 0xb0, 2, 2
+end
+
+@opdef beq! begin
+    Immediate, 0xf0, 2, 2
+end
+
+@opdef bmi! begin
+    Immediate, 0x30, 2, 2
+end
+
+@opdef bne! begin
+    Immediate, 0xd0, 2, 2  
+end
+
+@opdef bpl! begin
+    Immediate, 0x10, 2, 2
+end
+
+@opdef bvc! begin
+    Immediate, 0x50, 2, 2
+end
+
+@opdef bvs! begin
+    Immediate, 0x70, 2, 2
+end
+
+@opdef clc! begin
+    Implicit,  0x18, 1, 2
+end
+
+@opdef cld! begin
+    Implicit,  0xd8, 1, 2
+end
+
+@opdef cli! begin
+    Implicit,  0x58, 1, 2
+end
+
+@opdef clv! begin
+    Implicit,  0xb8, 1, 2
+end
+
+@opdef sec! begin
+    Implicit,  0x38, 1, 2
+end
+
+@opdef sed! begin
+    Implicit,  0xf8, 1, 2
+end
+
+@opdef sei! begin
+    Implicit,  0x78, 1, 2
+end
+
+@opdef brk! begin
+    Implicit,  0x00, 1, 7
+end
+
+@opdef nop! begin
+    Implicit,  0xea, 1, 2
+end
+
+@opdef rti! begin
+    Implicit,  0x40, 1, 6
 end
 #===================================================================================================
     </opcodes>
