@@ -1,15 +1,16 @@
-
+using Sim6502
 
 cs = Chipset()
 
 
-@assemble cs begin
+program = @assemble begin
     LDA, 0x01
-    STA, 0x0200
+    STA, Π(0x0200)
     LDA, 0x05
-    STA, 0x0201
+    STA, Π(0x0201)
     LDA, 0x08
-    STA, 0x0202
+    STA, Π(0x0202)
     BRK
 end
+
 

@@ -31,7 +31,7 @@ end
 
 # this doesn't do the sleeping
 function op!(cs::Chipset)
-    exe!, nbytes, ncycles = OPCODES[deref(Π(cs.cpu.PC), cs.ram)]
+    exe!, nbytes, ncycles = OPCODES[deref(Π(cs.cpu.PC), cs.ram)+1]
     exe!(cs)
     cs.cpu.PC += nbytes
     cs.clock += ncycles

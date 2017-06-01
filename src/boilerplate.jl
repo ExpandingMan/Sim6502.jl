@@ -12,7 +12,7 @@ end
 
 
 function opdict(opcode::UInt8, nbytes::Int, ncycles::Int)
-    :(OPCODES[$opcode] = ($(opfuncname(opcode)), $nbytes, $ncycles))
+    :(OPCODES[$opcode+1] = ($(opfuncname(opcode)), $nbytes, $ncycles))
 end
 
 
@@ -99,8 +99,6 @@ end
 function opdef(mode::Symbol, opname::Symbol, opcode::UInt8)
     if mode == :Implicit
         return opdef_Implicit(opname, opcode)
-    elseif mode == :Accumulator
-        return opdef_Accumulator(opname, opcode)
     elseif mode == :Immediate
         return opdef_Immediate(opname, opcode)
     elseif mode == :ZeroPage
