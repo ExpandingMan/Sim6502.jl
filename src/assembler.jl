@@ -33,7 +33,7 @@ end
 
 _assembly_lookup(op::String, mode::Symbol) = ASSEMBLY_DICT[(op,mode)]
 
-_assembly_args(::Void) = nothing
+_assembly_args(::Nothing) = nothing
 _assembly_args(x::UInt8) = x
 _assembly_args(x::UInt16) = reinterpret(UInt8, [x])
 
@@ -51,7 +51,7 @@ end
 
 
 macro assemble(block::Expr)
-    program = Vector{UInt8}()  # for now we'll dynamically allocate
+    program = Vector{UInt8}(undef)  # for now we'll dynamically allocate
     if @capture(block, begin instrs__ end)
         for instr ∈ instrs
             assemble!(program, instr)
@@ -61,4 +61,3 @@ macro assemble(block::Expr)
     end
     :($program)
 end
-export @assemble
