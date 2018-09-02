@@ -13,7 +13,7 @@ include("chipset.jl")
 include("opcodes.jl")
 include("assembler.jl")
 
-export CPU, fetch, store!, counter!, describe, status, status!, status_string
+export CPU, store!, counter!, describe, status, status!, status_string
 export Memory, Π, Π8, Π16, reset!, dereference, deref, ↦, ⇾, store!
 export Chipset
 

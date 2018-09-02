@@ -18,10 +18,12 @@ mutable struct Chipset
     δt::Float64
 
     clock::Int64
+
+
+    Chipset(c::CPU, m::Memory, δt::AbstractFloat) = new(c, m, δt, 0)
 end
 
 
-Chipset(c::CPU, m::Memory, δt::AbstractFloat) = new(c, m, δt, 0)
 Chipset(c::CPU, m::Memory) = Chipset(c, m, NES_CLOCK_PERIOD)
 Chipset() = Chipset(CPU(), Memory())
 

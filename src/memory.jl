@@ -14,9 +14,11 @@ abstract type AbstractΠ end  # uses capital Π
 # note that, somewhat confusingly, T is the type of the pointer, not the value being pointed to
 struct Π{T<:Unsigned} <: AbstractΠ
     addr::T
+
+    Π{T}(addr::Unsigned) where T<:Unsigned = new(addr)
 end
 
-Π{T}(addr::Unsigned) where T<:Unsigned = new(addr)
+Π(addr::T) where {T<:Unsigned} = Π{T}(addr)
 
 const Π8 = Π{UInt8}  # zero page pointer
 const Π16 = Π{UInt16}  # standard 6502 memory pointer
@@ -29,8 +31,8 @@ const Π16 = Π{UInt16}  # standard 6502 memory pointer
 
 reset!(m::Memory) = (m.v .= zeros(UInt8, length(m.v)))
 
-fetch(m::Memory, idx::T) where T<:Unsigned = m.v[idx+one(T)]
-fetch(m::Memory, idx::AbstractVector{T}) where T<:Unsigned = m.v[idx+one(T)]
+Base.fetch(m::Memory, idx::T) where T<:Unsigned = m.v[idx+one(T)]
+Base.fetch(m::Memory, idx::AbstractVector{T}) where T<:Unsigned = m.v[idx+one(T)]
 
 Base.getindex(m::Memory, idx) = m.v[idx + 0x0001]
 Base.getindex(m::Memory, ptr::Π) = fetch(m, ptr.addr)
@@ -40,7 +42,7 @@ Base.setindex!(m::Memory, val::UInt8, ptr::Π) = setindex!(m, val, ptr.addr)
 
 function Base.setindex!(m::Memory, v::AbstractVector{UInt8},
                         idx::AbstractVector{T}) where T <: Integer
-    m.v[idx+one(T)] = v
+    m.v[idx .+ one(T)] = v
 end
 
 Base.view(m::Memory, idx) = view(m.v, idx + 0x0001)

@@ -1,12 +1,8 @@
 using Sim6502
-using BenchmarkTools
+using Test
 
 c = CPU()
 m = Memory()
-
-macro p(expr)
-    esc(:($expr; println(c)))
-end
 
 @p ldx!(c, 0x80)
 @p stx!(c, m, Π(0x00))
@@ -23,4 +19,19 @@ end
 
 # @p jsr!(c, m, 0x0610)
 # @p rts!(c, m)
+
+@testset "instructions" begin
+
+c = CPU()
+m = Memory()
+
+@testset "loading" begin
+    
+    @testset "lda" begin
+
+    end
+
+end
+
+end
 

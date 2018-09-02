@@ -13,9 +13,9 @@ mutable struct FlagsRegister
     Ω::Bool
     V::Bool
     N::Bool
-end
 
-FlagsRegister() = new(false, false, false, false, false, false, false, false)
+    FlagsRegister() = new(false, false, false, false, false, false, false, false)
+end
 
 
 mutable struct CPU
@@ -31,7 +31,6 @@ mutable struct CPU
         new(A, X, Y, SP, PC, flags)
     end
 end
-
 
 
 @inline Base.fetch(c::CPU, reg::Symbol) = getfield(c, reg)
@@ -71,7 +70,7 @@ status!(fr::FlagsRegister, flag::Symbol, val::Bool) = setfield!(fr, flag, val)
 status!(c::CPU, flag::Symbol, val::Bool) = status!(c.flags, flag, val)
 
 function status_string(fr::FlagsRegister)
-    string((Int(getfield(fr, f)) for f ∈ reverse(fieldnames(fr)))...)
+    string((Int(getfield(fr, f)) for f ∈ reverse(fieldnames(typeof(fr))))...)
 end
 status_string(c::CPU) = status_string(c.flags)
 
